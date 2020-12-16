@@ -53,7 +53,7 @@ while running:
                 rotate_dir = 0
 
     screen.fill((128, 128, 128))
-    
+
     if move_dir:
         tank.move(int(move_dir * config.MOVE_SPEED * delta_time))
     if rotate_dir:

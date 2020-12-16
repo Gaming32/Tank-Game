@@ -32,7 +32,7 @@ class Tank:
 
     def move(self, dist: int):
         move = Vector2()
-        move.from_polar((dist, self.rotation + 90))
+        move.from_polar((dist, self.rotation - 90))
         self.position += move
 
     def render(self, surf: Surface, camerapos: Vector2):
