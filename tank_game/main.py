@@ -27,15 +27,13 @@ fps_smoothing = 0.9
 show_fps = False
 
 while running:
-    ms_time = clock.tick()
+    ms_time = clock.tick(config.FRAMERATE_CAP)
     delta_time = ms_time / 1000
     if delta_time > 0:
         thisfps = 1 / delta_time
     else:
         thisfps = 1000
     smoothfps = (smoothfps * fps_smoothing) + (thisfps * (1 - fps_smoothing))
-    disp_fps = int(smoothfps)
-    stdout.write(f'FPS: {disp_fps}{" " * 24}\r')
 
     for event in pygame.event.get():
         if event.type == QUIT:
