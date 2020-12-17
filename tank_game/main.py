@@ -57,10 +57,10 @@ while running:
 
     screen.fill((128, 128, 128))
 
-    if move_dir:
-        tank.move(int(move_dir * config.MOVE_SPEED * delta_time))
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
+    if move_dir:
+        tank.move(int(move_dir * config.MOVE_SPEED * delta_time))
     tank.render(screen, camera)
 
     if show_fps:
