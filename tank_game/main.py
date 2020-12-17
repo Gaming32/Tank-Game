@@ -24,15 +24,18 @@ running = True
 
 smoothfps = 1000
 fps_smoothing = 0.9
+show_fps = False
 
 while running:
-    delta_time = clock.tick() / 1000
+    ms_time = clock.tick()
+    delta_time = ms_time / 1000
     if delta_time > 0:
         thisfps = 1 / delta_time
     else:
         thisfps = 1000
     smoothfps = (smoothfps * fps_smoothing) + (thisfps * (1 - fps_smoothing))
-    stdout.write(f'FPS: {int(smoothfps)}{" " * 24}\r')
+    disp_fps = int(smoothfps)
+    stdout.write(f'FPS: {disp_fps}{" " * 24}\r')
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -46,6 +49,8 @@ while running:
                 rotate_dir = -1
             elif event.key == K_d:
                 rotate_dir = 1
+            elif (event.key == K_f) and (event.mod & KMOD_ALT) and (event.mod & KMOD_SHIFT):
+                show_fps = not show_fps
         if event.type == KEYUP:
             if event.key in (K_w, K_s):
                 move_dir = 0
@@ -59,4 +64,9 @@ while running:
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
     tank.render(screen, camera)
+
+    if show_fps:
+        fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
+        screen.blit(fps_display, fps_display.get_rect())
+
     pygame.display.update()
