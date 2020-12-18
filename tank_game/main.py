@@ -1,5 +1,3 @@
-from sys import stdout
-
 import pygame
 from pygame import *
 from pygame.locals import *
@@ -57,6 +55,8 @@ while running:
 
     screen.fill((128, 128, 128))
 
+    if Vector2(pygame.mouse.get_rel()):
+        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position - camera)).as_polar()[1] + 90)
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
     if move_dir:

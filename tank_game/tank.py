@@ -1,3 +1,4 @@
+from tank_game import config
 from pygame import *
 from pygame.locals import *
 from pygame.math import Vector2
@@ -15,6 +16,9 @@ class Tank:
     rotated_turret: Surface
 
     rot_offset: Vector2
+    turret_rot_offset: Vector2
+    turret_offset: Vector2
+
     tot_dist: list[int, int]
     frame: list[int, int]
 
@@ -25,9 +29,11 @@ class Tank:
         self.rotated_tank = tank_img[(0, 0)]
         self.rotated_turret = turret_img
         self.rot_offset = Vector2()
+        self.turret_rot_offset = Vector2()
+        self.turret_offset = Vector2(0, config.TURRET_OFFSET)
         self.tot_dist = [0, 0]
         self.frame = [0, 0]
-    
+
     def update_image(self):
         use_img = tank_img[tuple(self.frame)]
         self.rotated_tank, newrect = rot_center(use_img, -self.rotation, use_img.get_width() // 2, use_img.get_height() // 2)
@@ -35,6 +41,7 @@ class Tank:
 
     def rotate(self, amnt: int):
         self.rotation += amnt
+        self.turret_offset.from_polar((config.TURRET_OFFSET, self.rotation + 90))
         if amnt > 0:
             self.tot_dist[0] += amnt / 4
             self.tot_dist[1] -= amnt / 4
@@ -43,6 +50,13 @@ class Tank:
             self.tot_dist[1] += amnt / 4
         self.set_frame(False)
         self.update_image()
+
+    def set_turret_rotation(self, rot: int):
+        self.turret_rotation = rot
+        use_img = turret_img
+        toffset_tup = tuple(self.turret_offset + (use_img.get_width() // 2, use_img.get_height() // 2))
+        self.rotated_turret, newrect = rot_center(use_img, -self.turret_rotation, *toffset_tup)
+        self.turret_rot_offset.update(Vector2(newrect.width - use_img.get_width(), newrect.height - use_img.get_height()) * -0.5)
 
     def move(self, dist: int):
         move = Vector2()
@@ -65,3 +79,5 @@ class Tank:
     def render(self, surf: Surface, camerapos: Vector2):
         usepos = self.position - camerapos + self.rot_offset
         surf.blit(self.rotated_tank, Rect(usepos, self.rotated_tank.get_size()))
+        usepos = self.position - self.turret_offset - camerapos + self.turret_rot_offset
+        surf.blit(self.rotated_turret, Rect(usepos, self.rotated_turret.get_size()))
