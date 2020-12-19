@@ -22,20 +22,26 @@ class Tank:
     tot_dist: list[int, int]
     frame: list[int, int]
 
+    default_tank: dict[tuple[int, int], Surface] = tank_img
+    default_turret: Surface = turret_img
+
+    tank_moved_since_turret: bool
+
     def __init__(self) -> None:
         self.position = Vector2()
         self.rotation = 0
         self.turret_rotation = 0
-        self.rotated_tank = tank_img[(0, 0)]
-        self.rotated_turret = turret_img
+        self.rotated_tank = self.default_tank[(0, 0)]
+        self.rotated_turret = self.default_turret
         self.rot_offset = Vector2()
         self.turret_rot_offset = Vector2()
         self.turret_offset = Vector2(0, config.TURRET_OFFSET)
         self.tot_dist = [0, 0]
         self.frame = [0, 0]
+        self.tank_moved_since_turret = True
 
     def update_image(self):
-        use_img = tank_img[tuple(self.frame)]
+        use_img = self.default_tank[tuple(self.frame)]
         self.rotated_tank, newrect = rot_center(use_img, -self.rotation, use_img.get_width() // 2, use_img.get_height() // 2)
         self.rot_offset.update(Vector2(newrect.width - use_img.get_width(), newrect.height - use_img.get_height()) * -0.5)
 
@@ -53,10 +59,11 @@ class Tank:
 
     def set_turret_rotation(self, rot: int):
         self.turret_rotation = rot
-        use_img = turret_img
+        use_img = self.default_turret
         toffset_tup = tuple(self.turret_offset + (use_img.get_width() // 2, use_img.get_height() // 2))
         self.rotated_turret, newrect = rot_center(use_img, -self.turret_rotation, *toffset_tup)
         self.turret_rot_offset.update(Vector2(newrect.width - use_img.get_width(), newrect.height - use_img.get_height()) * -0.5)
+        self.tank_moved_since_turret = False
 
     def move(self, dist: int):
         move = Vector2()
@@ -65,6 +72,7 @@ class Tank:
         self.tot_dist[0] += dist
         self.tot_dist[1] += dist
         self.set_frame()
+        self.tank_moved_since_turret = True
 
     def set_frame(self, update_img=True):
         old_frame = self.frame[:]

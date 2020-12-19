@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from pygame import *
 from pygame.locals import *
@@ -7,11 +9,18 @@ pygame.init()
 screen = pygame.display.set_mode((1920, 1080), FULLSCREEN | SCALED)
 
 from tank_game.tank import Tank
+from tank_game.aitank import AITank
 from tank_game import config
 
 
 tank = Tank()
 camera = Vector2(-960, -540)
+enemies: list[AITank] = []
+
+for _ in range(random.randrange(5) + 1):
+    enemy = AITank()
+    enemy.position.update(random.uniform(-960, 960), random.uniform(-540, 540))
+    enemies.append(enemy)
 
 rotate_dir = 0
 move_dir = 0
@@ -55,13 +64,16 @@ while running:
 
     screen.fill((128, 128, 128))
 
-    if Vector2(pygame.mouse.get_rel()):
+    if tank.tank_moved_since_turret or Vector2(pygame.mouse.get_rel()):
         tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position - camera)).as_polar()[1] + 90)
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
     if move_dir:
         tank.move(int(move_dir * config.MOVE_SPEED * delta_time))
     tank.render(screen, camera)
+
+    for enemy in enemies:
+        enemy.render(screen, camera)
 
     if show_fps:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
