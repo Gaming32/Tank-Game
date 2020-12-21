@@ -30,13 +30,13 @@ def raycast_line(ray_origin: Vector2, ray_direction: Vector2, pt1: Vector2, pt2:
     dot = v2 * v3
     if abs(dot) < 0.000001:
         return None
-    
+
     t1 = v2.cross(v1) / dot
     t2 = (v1 * v3) / dot
 
     if t1 >= 0.0 and (t2 >= 0.0 and t2 <= 1.0):
         return t1
-    
+
     return None
 
 
