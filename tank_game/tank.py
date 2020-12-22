@@ -8,7 +8,7 @@ from pygame.locals import *
 from pygame.math import Vector2
 
 from tank_game.assets import tank as tank_img, turret as turret_img
-from tank_game.utils import rot_center
+from tank_game.utils import rot_center, raycast_line
 from tank_game import consts, config, global_vars
 
 
@@ -190,7 +190,7 @@ class Tank:
                 for j in range(i, 4):
                     pygame.draw.line(surf, 'blue', pts[i] - camerapos, pts[j] - camerapos, 3)
 
-    def get_collision(self, dist: int, angle: int, tanks: list[Tank]) -> tuple[bool, float, Tank]:
+    def get_collision(self, dist: int, within: int, angle: int, tanks: list[Tank]) -> tuple[bool, float, Tank]:
         if dist == 0:
             return False
         if dist > 0:
@@ -198,24 +198,49 @@ class Tank:
         else:
             rel_angle = 180
         ver_angle = angle + rel_angle
-        ver_angle_lt = (ver_angle - 90) % 360
-        ver_angle_gt = (ver_angle + 90) % 360
+        ver_angle_lt = (ver_angle - 45) % 360
+        ver_angle_gt = (ver_angle + 45) % 360
         close_dist = inf
         close_tank = None
         for other in tanks:
             if other is self:
                 continue
             ang = (other.position - self.position).as_polar()[1] + 90
+            ang %= 360
             if ver_angle_lt < ang < ver_angle_gt:
                 if (tdist := self.position.distance_squared_to(other.position)) < close_dist:
                     close_dist = tdist
                     close_tank = other
-        return close_dist <= 16384, close_dist, close_tank
+        return close_dist <= within, close_dist, close_tank
 
     def will_collide(self, dist: int, tanks: list[Tank]) -> bool:
-        return self.get_collision(dist, self.rotation, tanks)[0]
-    
-    def shoot(self, tanks: list[Tank]) -> bool:
-        did, ang, other = self.get_collision(96, self.turret_rotation, tanks)
+        return self.get_collision(dist, 16384, self.rotation, tanks)[0]
+
+    def get_shot(self, tanks: list[Tank]) -> tuple[bool, float, Tank]:
+        # 1,073,741,824 is 32,768*32,768 (this means we can shoot things up to 32,768 pixels away)
+        did, dist, other = self.get_collision(96, 1073741824, self.turret_rotation, tanks)
+        would_hit = False
+        hitdist = None
         if did:
-            pass
+            pts = other.gethbox()
+            would_hit = False
+            turret_vec = Vector2()
+            turret_vec.from_polar((1, self.turret_rotation + 270))
+            for i in range(4):
+                for j in range(i, 4):
+                    hitdist = raycast_line(self.position, turret_vec, pts[i], pts[j])
+                    if hitdist is not None:
+                        would_hit = True
+                        break
+                if would_hit:
+                    break
+        return would_hit, hitdist, other
+
+    def shoot(self, tanks: list[Tank]):
+        would_hit, hitdist, hitted = self.get_shot(tanks)
+        if would_hit:
+            hitpoint = Vector2()
+            hitpoint.from_polar((hitdist, self.turret_rotation + 270))
+            hitpoint += self.position
+            pygame.draw.circle(pygame.display.get_surface(), 'orange', hitpoint - global_vars.camera, 15)
+            hitted.health -= 34

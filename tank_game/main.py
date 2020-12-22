@@ -22,7 +22,8 @@ tank = Tank()
 global_vars.camera = Vector2(-960, -540)
 enemies: list[AITank] = []
 
-for _ in range(random.randrange(5) + 1):
+# for _ in range(random.randrange(5) + 1):
+for _ in range(1):
     enemy = AITank()
     asynchronous.append(enemy.begin())
     enemies.append(enemy)
@@ -93,6 +94,8 @@ while running:
     for enemy in enemies:
         enemy.update(tank, enemies)
         enemy.render(screen, global_vars.camera)
+
+    tank.shoot(enemies)
 
     if global_vars.debug:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))

@@ -38,10 +38,3 @@ def raycast_line(ray_origin: Vector2, ray_direction: Vector2, pt1: Vector2, pt2:
         return t1
 
     return None
-
-
-def raycast_line_distance(ray_origin: Vector2, ray_direction: Vector2, pt1: Vector2, pt2: Vector2):
-    pt_res = raycast_line(ray_origin, ray_direction, pt1, pt2)
-    if pt_res is None:
-        return inf
-    return ray_origin.distance_to(pt_res)
