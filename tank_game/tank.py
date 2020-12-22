@@ -42,6 +42,7 @@ class Tank:
     health: float
 
     show_sight: bool
+    score: int
 
     def __init__(self, health: float = 100) -> None:
         self.position = Vector2()
@@ -64,6 +65,7 @@ class Tank:
         self.max_health = health
         self.health = health
         self.show_sight = False
+        self.score = 0
 
     def update_image(self):
         use_img = self.default_tank[tuple(self.frame)]
@@ -236,7 +238,7 @@ class Tank:
                     break
         return would_hit, hitdist, other
 
-    def shoot(self, surf: Surface, tanks: list[Tank]):
+    def shoot(self, surf: Surface, tanks: list[Tank], count_points=True):
         would_hit, hitdist, hitted = self.get_shot(tanks)
         if would_hit:
             hitpoint = Vector2()
@@ -245,7 +247,8 @@ class Tank:
             # yield from self._move_shoot(surf, hitpoint)
             yield from render_shot(surf, hitpoint, 0.5)
             hitted.health -= 34
-    
+            self.score += 100 if hitted.dead() else 50
+
     def _move_shoot(self, surf: Surface, dest: Vector2):
         curpos = Vector2(self.position)
         angle = curpos.angle_to(dest)

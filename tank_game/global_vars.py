@@ -10,3 +10,4 @@ asynchronous: list[Generator[None, None, None]]
 debug: bool
 all_tanks: list[Tank]
 camera: Vector2
+time_lasted: float

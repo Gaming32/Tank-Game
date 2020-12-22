@@ -15,10 +15,19 @@ from tank_game.aitank import AITank
 
 
 def reset_tank():
+    global_vars.time_lasted = 0
     tank.health = config.PLAYER_START_HEALTH
+    tank.score = 0
     tank.position.update()
     tank.rotate(-tank.rotation)
     tank.set_turret_rotation(0)
+
+
+def create_enemies():
+    for _ in range(random.randrange(5) + 1):
+        enemy = AITank(config.ENEMY_START_HEALTH)
+        StartCoroutine(enemy.begin(screen))
+        enemies.append(enemy)
 
 
 asynchronous = []
@@ -26,14 +35,11 @@ global_vars.asynchronous = asynchronous
 pygame.mouse.set_system_cursor(SYSTEM_CURSOR_CROSSHAIR)
 
 
+global_vars.time_lasted = 0
 tank = Tank(config.PLAYER_START_HEALTH)
 global_vars.camera = Vector2(-960, -540)
 enemies: list[AITank] = []
-
-for _ in range(random.randrange(5) + 1):
-    enemy = AITank(config.ENEMY_START_HEALTH)
-    StartCoroutine(enemy.begin(screen))
-    enemies.append(enemy)
+create_enemies()
 
 
 rotate_dir = 0
@@ -123,9 +129,26 @@ while running:
 
     if tank.dead():
         reset_tank()
+        enemies.clear()
+        create_enemies()
+        global_vars.all_tanks[1:] = enemies
+    else:
+        global_vars.time_lasted += delta_time
 
     if global_vars.debug:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
         screen.blit(fps_display, fps_display.get_rect())
+
+    score_disp = config.SCORE_FONT.render(f'Score: {tank.score}', True, 'purple')
+    score_rect = score_disp.get_rect()
+    score_rect.x = 960 - score_rect.centerx
+    score_rect.y = 35
+    screen.blit(score_disp, score_rect)
+
+    time_disp = config.SCORE_FONT.render(f'Time: {int(global_vars.time_lasted)}', True, 'purple')
+    time_rect = time_disp.get_rect()
+    time_rect.x = 960 - time_rect.centerx
+    time_rect.y = score_rect.bottom + 15
+    screen.blit(time_disp, time_rect)
 
     pygame.display.update()
