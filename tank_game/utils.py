@@ -47,3 +47,16 @@ def render_shot(surf: Surface, pos: Vector2, time: float):
         time_passed += global_vars.delta_time
         pygame.draw.circle(surf, 'orange', pos - global_vars.camera, 15)
         yield
+
+
+# This is an idea from Unity3D
+
+def StartCoroutine(co):
+    global_vars.asynchronous.append(co)
+
+
+def WaitForSeconds(seconds: float):
+    passed = 0
+    while passed < seconds:
+        passed += global_vars.delta_time
+        yield

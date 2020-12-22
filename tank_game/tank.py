@@ -110,7 +110,7 @@ class Tank:
         curmov = 0
         useop = operator.lt if dist >= 0 else operator.gt
         while useop(curmov, dist):
-            to_move = speed * global_vars.delta_time
+            to_move = min(speed * global_vars.delta_time, dist - curmov)
             if not (collision and self.will_collide(to_move, global_vars.all_tanks)):
                 self.move(to_move)
             curmov += to_move
@@ -124,7 +124,7 @@ class Tank:
         currot = 0
         useop = operator.lt if amnt >= 0 else operator.gt
         while useop(currot, amnt):
-            to_rotate = speed * global_vars.delta_time
+            to_rotate = min(speed * global_vars.delta_time, amnt - currot)
             self.rotate(to_rotate)
             currot += to_rotate
             yield

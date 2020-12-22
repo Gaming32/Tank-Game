@@ -9,8 +9,16 @@ pygame.init()
 screen = pygame.display.set_mode((1920, 1080), FULLSCREEN | SCALED)
 
 from tank_game import config, global_vars
+from tank_game.utils import StartCoroutine
 from tank_game.tank import Tank
 from tank_game.aitank import AITank
+
+
+def reset_tank():
+    tank.health = config.PLAYER_START_HEALTH
+    tank.position.update()
+    tank.rotate(-tank.rotation)
+    tank.set_turret_rotation(0)
 
 
 asynchronous = []
@@ -18,13 +26,13 @@ global_vars.asynchronous = asynchronous
 pygame.mouse.set_system_cursor(SYSTEM_CURSOR_CROSSHAIR)
 
 
-tank = Tank()
+tank = Tank(config.PLAYER_START_HEALTH)
 global_vars.camera = Vector2(-960, -540)
 enemies: list[AITank] = []
 
 for _ in range(random.randrange(5) + 1):
-    enemy = AITank()
-    asynchronous.append(enemy.begin())
+    enemy = AITank(config.ENEMY_START_HEALTH)
+    StartCoroutine(enemy.begin(screen))
     enemies.append(enemy)
 
 
@@ -103,13 +111,18 @@ while running:
         enemy.render(screen, global_vars.camera)
     for enemy in remove_enemies:
         enemies.remove(enemy)
-        new = AITank()
-        asynchronous.append(new.begin())
+        global_vars.all_tanks.remove(enemy)
+        new = AITank(config.ENEMY_START_HEALTH)
+        StartCoroutine(new.begin(screen))
         enemies.append(new)
+        global_vars.all_tanks.append(new)
 
     if shot_active:
-        asynchronous.append(tank.shoot(screen, enemies))
+        StartCoroutine(tank.shoot(screen, enemies))
         shot_active = False
+
+    if tank.dead():
+        reset_tank()
 
     if global_vars.debug:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
