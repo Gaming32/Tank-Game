@@ -44,6 +44,8 @@ class AITank(Tank):
     def always_shooting(self, surf):
         while not self.dead():
             yield from WaitForSeconds(random.uniform(*self.shoot_speed))
+            while global_vars.paused:
+                yield
             shoot_action = self.shoot(surf, global_vars.all_tanks, False)
             StartCoroutine(shoot_action)
 

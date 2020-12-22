@@ -177,14 +177,15 @@ class Tank:
             pygame.draw.rect(surf, 'red', userect, 3)
         surf.blit(self.rotated_turret, userect)
         # Render health
-        max_health_width = self.max_health
-        usepos = self.position - camerapos
-        usepos.x += 64 - ( max_health_width / 2)
-        usepos.y -= 32
-        userect = Rect(usepos, (max_health_width, 25))
-        pygame.draw.rect(surf, 'red', userect)
-        userect = Rect(usepos, (self.health, 25))
-        pygame.draw.rect(surf, 'green', userect)
+        if not global_vars.paused:
+            max_health_width = self.max_health
+            usepos = self.position - camerapos
+            usepos.x += 64 - ( max_health_width / 2)
+            usepos.y -= 32
+            userect = Rect(usepos, (max_health_width, 25))
+            pygame.draw.rect(surf, 'red', userect)
+            userect = Rect(usepos, (self.health, 25))
+            pygame.draw.rect(surf, 'green', userect)
         # Render hitbox
         if global_vars.debug:
             pts = self.gethbox()

@@ -46,6 +46,10 @@ rotate_dir = 0
 move_dir = 0
 shot_active = False
 
+death_screen_open = False
+global_vars.paused = False
+death_screen_close = False
+
 
 clock = pygame.time.Clock()
 running = True
@@ -80,6 +84,9 @@ while running:
             elif event.key == K_F3:
             # elif (event.key == K_f) and (event.mod & KMOD_ALT) and (event.mod & KMOD_SHIFT):
                 global_vars.debug = not global_vars.debug
+            elif event.key == K_SPACE:
+                if death_screen_open:
+                    death_screen_close = True
         elif event.type == KEYUP:
             if event.key in (K_w, K_s):
                 move_dir = 0
@@ -87,7 +94,10 @@ while running:
                 rotate_dir = 0
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                shot_active = True
+                if death_screen_open:
+                    death_screen_close = True
+                else:
+                    shot_active = True
 
     screen.fill((128, 128, 128))
 
@@ -98,14 +108,15 @@ while running:
     for fun in to_remove:
         asynchronous.remove(fun)
 
-    if tank.tank_moved_since_turret or Vector2(pygame.mouse.get_rel()):
-        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position + Vector2(64, 0) + tank.turret_offset - global_vars.camera)).as_polar()[1] + 90)
-    if rotate_dir:
-        tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
-    if move_dir:
-        dist = int(move_dir * config.MOVE_SPEED * delta_time)
-        if not tank.will_collide(dist, enemies):
-            tank.move(dist)
+    if not global_vars.paused:
+        if tank.tank_moved_since_turret or Vector2(pygame.mouse.get_rel()):
+            tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position + Vector2(64, 0) + tank.turret_offset - global_vars.camera)).as_polar()[1] + 90)
+        if rotate_dir:
+            tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
+        if move_dir:
+            dist = int(move_dir * config.MOVE_SPEED * delta_time)
+            if not tank.will_collide(dist, enemies):
+                tank.move(dist)
     tank.render(screen, global_vars.camera)
 
     remove_enemies = []
@@ -113,7 +124,8 @@ while running:
         if enemy.dead():
             remove_enemies.append(enemy)
             continue
-        enemy.update(tank, enemies)
+        if not global_vars.paused:
+            enemy.update(tank, enemies)
         enemy.render(screen, global_vars.camera)
     for enemy in remove_enemies:
         enemies.remove(enemy)
@@ -123,32 +135,73 @@ while running:
         enemies.append(new)
         global_vars.all_tanks.append(new)
 
-    if shot_active:
-        StartCoroutine(tank.shoot(screen, enemies))
-        shot_active = False
+    if not global_vars.paused:
+        if shot_active:
+            StartCoroutine(tank.shoot(screen, enemies))
+            shot_active = False
 
-    if tank.dead():
-        reset_tank()
-        enemies.clear()
-        create_enemies()
-        global_vars.all_tanks[1:] = enemies
-    else:
-        global_vars.time_lasted += delta_time
+    if not global_vars.paused:
+        if tank.dead():
+            death_screen_open = True
+            global_vars.paused = True
+        else:
+            global_vars.time_lasted += delta_time
 
     if global_vars.debug:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
         screen.blit(fps_display, fps_display.get_rect())
 
-    score_disp = config.SCORE_FONT.render(f'Score: {tank.score}', True, 'purple')
-    score_rect = score_disp.get_rect()
-    score_rect.x = 960 - score_rect.centerx
-    score_rect.y = 35
-    screen.blit(score_disp, score_rect)
+    if not global_vars.paused:
+        score_disp = config.SCORE_FONT.render(f'Score: {tank.score}', True, 'purple')
+        score_rect = score_disp.get_rect()
+        score_rect.x = 960 - score_rect.centerx
+        score_rect.y = 35
+        screen.blit(score_disp, score_rect)
 
-    time_disp = config.SCORE_FONT.render(f'Time: {int(global_vars.time_lasted)}', True, 'purple')
-    time_rect = time_disp.get_rect()
-    time_rect.x = 960 - time_rect.centerx
-    time_rect.y = score_rect.bottom + 15
-    screen.blit(time_disp, time_rect)
+        time_disp = config.SCORE_FONT.render(f'Time: {int(global_vars.time_lasted)}', True, 'purple')
+        time_rect = time_disp.get_rect()
+        time_rect.x = 960 - time_rect.centerx
+        time_rect.y = score_rect.bottom + 15
+        screen.blit(time_disp, time_rect)
+
+    else:
+        rendered = config.FINAL_INFO_HEADER_FONT.render('You Died!', True, 'darkgreen')
+        dest_rect = rendered.get_rect()
+        dest_rect.x = 960 - dest_rect.centerx
+        dest_rect.y = 337 - dest_rect.centery
+        screen.blit(rendered, dest_rect)
+
+        rendered = config.FINAL_INFO_BODY_FONT.render(f'You had a final score of {tank.score}', True, 'darkgreen')
+        dest_rect = rendered.get_rect()
+        dest_rect.x = 960 - dest_rect.centerx
+        dest_rect.y = 472 - dest_rect.centery
+        screen.blit(rendered, dest_rect)
+
+        rendered = config.FINAL_INFO_BODY_FONT.render(f'And you survived for {global_vars.time_lasted:.3f} seconds', True, 'darkgreen')
+        dest_rect = rendered.get_rect()
+        dest_rect.x = 960 - dest_rect.centerx
+        dest_rect.y = 607 - dest_rect.centery
+        screen.blit(rendered, dest_rect)
+
+        rendered = config.FINAL_INFO_BODY_FONT.render('Press space or click the screen to continue.', True, 'darkgreen')
+        dest_rect = rendered.get_rect()
+        dest_rect.x = 960 - dest_rect.centerx
+        dest_rect.y = 751 - dest_rect.centery
+        screen.blit(rendered, dest_rect)
+
+    if death_screen_open and death_screen_close:
+        death_screen_open = False
+        death_screen_close = False
+        global_vars.paused = False
+        rmco = []
+        for co in asynchronous:
+            if not hasattr(co, 'long_lasting'):
+                rmco.append(co)
+        for co in rmco:
+            asynchronous.remove(co)
+        reset_tank()
+        enemies.clear()
+        create_enemies()
+        global_vars.all_tanks[1:] = enemies
 
     pygame.display.update()
