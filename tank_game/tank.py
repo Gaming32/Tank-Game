@@ -8,7 +8,7 @@ from pygame.locals import *
 from pygame.math import Vector2
 
 from tank_game.assets import tank as tank_img, turret as turret_img
-from tank_game.utils import rot_center, raycast_line
+from tank_game.utils import rot_center, raycast_line, render_shot
 from tank_game import consts, config, global_vars
 
 
@@ -236,11 +236,28 @@ class Tank:
                     break
         return would_hit, hitdist, other
 
-    def shoot(self, tanks: list[Tank]):
+    def shoot(self, surf: Surface, tanks: list[Tank]):
         would_hit, hitdist, hitted = self.get_shot(tanks)
         if would_hit:
             hitpoint = Vector2()
             hitpoint.from_polar((hitdist, self.turret_rotation + 270))
             hitpoint += self.position
-            pygame.draw.circle(pygame.display.get_surface(), 'orange', hitpoint - global_vars.camera, 15)
+            # yield from self._move_shoot(surf, hitpoint)
+            yield from render_shot(surf, hitpoint, 0.5)
             hitted.health -= 34
+    
+    def _move_shoot(self, surf: Surface, dest: Vector2):
+        curpos = Vector2(self.position)
+        angle = curpos.angle_to(dest)
+        last_angle = angle
+        move = Vector2()
+        move.from_polar((1, angle + 180))
+        while angle == last_angle:
+            curpos += move * global_vars.delta_time
+            pygame.draw.circle(surf, 'brown', curpos - global_vars.camera, 3)
+            last_angle = angle
+            angle = curpos.angle_to(dest)
+            yield
+    
+    def dead(self) -> bool:
+        return self.health <= 0

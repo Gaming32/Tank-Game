@@ -1,10 +1,11 @@
-from math import inf
-
 import pygame
-from pygame import Color, Surface, Vector2
+from pygame import *
+from pygame.locals import *
+
+from tank_game import global_vars
 
 
-def rot_center(image: pygame.Surface, angle: int, x: int, y: int) -> tuple[pygame.Surface, pygame.Rect]:
+def rot_center(image: Surface, angle: int, x: int, y: int) -> tuple[Surface, Rect]:
     
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center = image.get_rect(center = (x, y)).center)
@@ -38,3 +39,11 @@ def raycast_line(ray_origin: Vector2, ray_direction: Vector2, pt1: Vector2, pt2:
         return t1
 
     return None
+
+
+def render_shot(surf: Surface, pos: Vector2, time: float):
+    time_passed = 0
+    while time_passed < time:
+        time_passed += global_vars.delta_time
+        pygame.draw.circle(surf, 'orange', pos - global_vars.camera, 15)
+        yield

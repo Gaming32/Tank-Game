@@ -94,12 +94,21 @@ while running:
             tank.move(dist)
     tank.render(screen, global_vars.camera)
 
+    remove_enemies = []
     for enemy in enemies:
+        if enemy.dead():
+            remove_enemies.append(enemy)
+            continue
         enemy.update(tank, enemies)
         enemy.render(screen, global_vars.camera)
+    for enemy in remove_enemies:
+        enemies.remove(enemy)
+        new = AITank()
+        asynchronous.append(new.begin())
+        enemies.append(new)
 
     if shot_active:
-        tank.shoot(enemies)
+        asynchronous.append(tank.shoot(screen, enemies))
         shot_active = False
 
     if global_vars.debug:
