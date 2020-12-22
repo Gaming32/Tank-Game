@@ -83,7 +83,10 @@ class Tank:
     def move(self, dist: int):
         move = Vector2()
         move.from_polar((dist, self.rotation - 90))
-        self.position += move
+        predict = self.position + move
+        camrect = Rect(global_vars.camera, (1920, 1080))
+        if not camrect.collidepoint(self.position) or camrect.collidepoint(predict):
+            self.position.update(predict)
         self.tot_dist[0] += dist
         self.tot_dist[1] += dist
         self.set_frame()
@@ -148,7 +151,7 @@ class Tank:
         pygame.draw.rect(surf, 'red', userect)
         userect = Rect(usepos, (self.health, 25))
         pygame.draw.rect(surf, 'green', userect)
-    
+
     def will_collide(self, dist: int, tanks: list[Tank]):
         if dist == 0:
             return False

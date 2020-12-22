@@ -19,7 +19,7 @@ pygame.mouse.set_system_cursor(SYSTEM_CURSOR_CROSSHAIR)
 
 
 tank = Tank()
-camera = Vector2(-960, -540)
+global_vars.camera = Vector2(-960, -540)
 enemies: list[AITank] = []
 
 for _ in range(random.randrange(5) + 1):
@@ -81,18 +81,18 @@ while running:
         asynchronous.remove(fun)
 
     if tank.tank_moved_since_turret or Vector2(pygame.mouse.get_rel()):
-        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position - camera)).as_polar()[1] + 90)
+        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position - global_vars.camera)).as_polar()[1] + 90)
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
     if move_dir:
         dist = int(move_dir * config.MOVE_SPEED * delta_time)
         if not tank.will_collide(dist, enemies):
             tank.move(dist)
-    tank.render(screen, camera)
+    tank.render(screen, global_vars.camera)
 
     for enemy in enemies:
         enemy.update(tank, enemies)
-        enemy.render(screen, camera)
+        enemy.render(screen, global_vars.camera)
 
     if global_vars.debug:
         fps_display = config.FPS_FONT.render(f'FPS: {thisfps:.1f}/{smoothfps:.1f} ({ms_time}ms)', False, (255, 255, 255))
