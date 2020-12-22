@@ -81,7 +81,7 @@ while running:
         asynchronous.remove(fun)
 
     if tank.tank_moved_since_turret or Vector2(pygame.mouse.get_rel()):
-        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position - global_vars.camera)).as_polar()[1] + 90)
+        tank.set_turret_rotation((Vector2(pygame.mouse.get_pos()) - (tank.position + Vector2(64, 0) + tank.turret_offset - global_vars.camera)).as_polar()[1] + 90)
     if rotate_dir:
         tank.rotate(int(rotate_dir * config.ROTATE_SPEED * delta_time))
     if move_dir:

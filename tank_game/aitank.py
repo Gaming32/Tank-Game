@@ -12,6 +12,7 @@ class AITank(Tank):
     ready: bool = False
 
     def begin(self):
+        self.show_sight = False
         side = random.randrange(4)
         pos = random.uniform(-960, 960) if side in (0, 1) else random.uniform(-540, 540)
         if side == 0:

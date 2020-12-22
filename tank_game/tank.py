@@ -9,7 +9,7 @@ from pygame.math import Vector2
 
 from tank_game.assets import tank as tank_img, turret as turret_img
 from tank_game.utils import rot_center
-from tank_game import config, global_vars
+from tank_game import consts, config, global_vars
 
 
 class Tank:
@@ -20,9 +20,12 @@ class Tank:
     rotated_tank: Surface
     rotated_turret: Surface
 
+    half_size: Vector2
+
     rot_offset: Vector2
     turret_rot_offset: Vector2
     turret_offset: Vector2
+    real_turret_offset: Vector2
 
     tot_dist: list[int, int]
     frame: list[int, int]
@@ -38,6 +41,8 @@ class Tank:
     max_health: float
     health: float
 
+    show_sight: bool
+
     def __init__(self, health: float = 100) -> None:
         self.position = Vector2()
         self.rotation = 0
@@ -47,6 +52,10 @@ class Tank:
         self.rot_offset = Vector2()
         self.turret_rot_offset = Vector2()
         self.turret_offset = Vector2(0, config.TURRET_OFFSET)
+        self.half_size = Vector2(self.default_turret.get_size()) // 2
+        real_tur_off = Vector2(self.half_size)
+        real_tur_off.y *= -0.25
+        self.real_turret_offset = self.turret_offset + real_tur_off
         self.tot_dist = [0, 0]
         self.frame = [0, 0]
         self.tank_moved_since_turret = True
@@ -54,10 +63,11 @@ class Tank:
         self.rotating_async = False
         self.max_health = health
         self.health = health
+        self.show_sight = False
 
     def update_image(self):
         use_img = self.default_tank[tuple(self.frame)]
-        self.rotated_tank, newrect = rot_center(use_img, -self.rotation, use_img.get_width() // 2, use_img.get_height() // 2)
+        self.rotated_tank, newrect = rot_center(use_img, -self.rotation, *self.half_size)
         self.rot_offset.update(Vector2(newrect.width - use_img.get_width(), newrect.height - use_img.get_height()) * -0.5)
 
     def rotate(self, amnt: int):
@@ -75,7 +85,8 @@ class Tank:
     def set_turret_rotation(self, rot: int):
         self.turret_rotation = rot
         use_img = self.default_turret
-        toffset_tup = tuple(self.turret_offset + (use_img.get_width() // 2, use_img.get_height() // 2))
+        # toffset_tup = tuple(self.turret_offset + (use_img.get_width() // 2, use_img.get_height() // 2))
+        toffset_tup = tuple(self.real_turret_offset)
         self.rotated_turret, newrect = rot_center(use_img, -self.turret_rotation, *toffset_tup)
         self.turret_rot_offset.update(Vector2(newrect.width - use_img.get_width(), newrect.height - use_img.get_height()) * -0.5)
         self.tank_moved_since_turret = False
@@ -128,19 +139,40 @@ class Tank:
         self.frame[1] = int(self.tot_dist[1] / 8 % 2)
         if update_img and self.frame != old_frame:
             self.update_image()
+        
+    def gethbox(self) -> tuple[Vector2, Vector2, Vector2, Vector2]:
+        ori_offset = self.half_size.rotate(self.rotation)
+        origin_corner = self.position - ori_offset + self.half_size # Top left corner
+        blc = Vector2() # Bottom left corner
+        blc.from_polar((128, self.rotation))
+        blc += origin_corner
+        trc = Vector2() # Top right corner
+        trc.from_polar((128, self.rotation + 90))
+        trc += origin_corner
+        brc = Vector2() # Bottom right corner
+        brc.from_polar((consts.dimension_sqrt2, self.rotation + 45))
+        brc += origin_corner
+        return origin_corner, blc, trc, brc
 
     def render(self, surf: Surface, camerapos: Vector2):
         # Render tank
         usepos = self.position - camerapos + self.rot_offset
         userect = Rect(usepos, self.rotated_tank.get_size())
         if global_vars.debug:
-            pygame.draw.rect(surf, 'green', userect, 1)
+            pygame.draw.rect(surf, 'green', userect, 3)
         surf.blit(self.rotated_tank, userect)
+        # Render sight
+        if self.show_sight:
+            usepos = self.position - camerapos + self.real_turret_offset
+            dest = Vector2()
+            dest.from_polar((2048, self.turret_rotation - 90))
+            dest += usepos
+            pygame.draw.line(surf, 'red', usepos, dest, 3)
         # Render turret
         usepos = self.position - self.turret_offset - camerapos + self.turret_rot_offset
         userect = Rect(usepos, self.rotated_turret.get_size())
         if global_vars.debug:
-            pygame.draw.rect(surf, 'red', userect, 1)
+            pygame.draw.rect(surf, 'red', userect, 3)
         surf.blit(self.rotated_turret, userect)
         # Render health
         max_health_width = self.max_health
@@ -151,18 +183,25 @@ class Tank:
         pygame.draw.rect(surf, 'red', userect)
         userect = Rect(usepos, (self.health, 25))
         pygame.draw.rect(surf, 'green', userect)
+        # Render hitbox
+        if global_vars.debug:
+            pts = self.gethbox()
+            for i in range(4):
+                for j in range(i, 4):
+                    pygame.draw.line(surf, 'blue', pts[i] - camerapos, pts[j] - camerapos, 3)
 
-    def will_collide(self, dist: int, tanks: list[Tank]):
+    def get_collision(self, dist: int, angle: int, tanks: list[Tank]) -> tuple[bool, float, Tank]:
         if dist == 0:
             return False
         if dist > 0:
-            angle = 0
+            rel_angle = 0
         else:
-            angle = 180
-        ver_angle = self.rotation + angle
+            rel_angle = 180
+        ver_angle = angle + rel_angle
         ver_angle_lt = (ver_angle - 90) % 360
         ver_angle_gt = (ver_angle + 90) % 360
         close_dist = inf
+        close_tank = None
         for other in tanks:
             if other is self:
                 continue
@@ -170,4 +209,13 @@ class Tank:
             if ver_angle_lt < ang < ver_angle_gt:
                 if (tdist := self.position.distance_squared_to(other.position)) < close_dist:
                     close_dist = tdist
-        return close_dist <= 16384
+                    close_tank = other
+        return close_dist <= 16384, close_dist, close_tank
+
+    def will_collide(self, dist: int, tanks: list[Tank]) -> bool:
+        return self.get_collision(dist, self.rotation, tanks)[0]
+    
+    def shoot(self, tanks: list[Tank]) -> bool:
+        did, ang, other = self.get_collision(96, self.turret_rotation, tanks)
+        if did:
+            pass
