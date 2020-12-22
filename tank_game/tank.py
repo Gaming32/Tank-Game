@@ -221,10 +221,15 @@ class Tank:
 
     def get_shot(self, tanks: list[Tank]) -> tuple[bool, float, Tank]:
         # 1,073,741,824 is 32,768*32,768 (this means we can shoot things up to 32,768 pixels away)
-        did, dist, other = self.get_collision(96, 1073741824, self.turret_rotation, tanks)
+        # did, dist, other = self.get_collision(96, 1073741824, self.turret_rotation, tanks)
         would_hit = False
-        hitdist = None
-        if did:
+        minhitdist = inf
+        hitdist = inf
+        minother = None
+        # if did:
+        for other in tanks:
+            if other is self:
+                continue
             pts = other.gethbox()
             would_hit = False
             turret_vec = Vector2()
@@ -237,7 +242,11 @@ class Tank:
                         break
                 if would_hit:
                     break
-        return would_hit, hitdist, other
+            if hitdist is not None:
+                if hitdist < minhitdist:
+                    minhitdist = hitdist
+                    minother = other
+        return would_hit, minhitdist, minother
 
     def shoot(self, surf: Surface, tanks: list[Tank], count_points=True):
         would_hit, hitdist, hitted = self.get_shot(tanks)
