@@ -8,10 +8,11 @@ pygame.init()
 # FULLSCREEN = 0
 screen = pygame.display.set_mode((1920, 1080), FULLSCREEN | SCALED)
 
-from tank_game import config, global_vars
+from tank_game import config, global_vars, leaderboard_secrets
 from tank_game.utils import StartCoroutine
 from tank_game.tank import Tank
 from tank_game.aitank import AITank
+from tank_game.guileaderboard import LeaderboardGUI
 
 
 def reset_tank():
@@ -48,7 +49,12 @@ shot_active = False
 
 death_screen_open = False
 global_vars.paused = False
+global_vars.show_leaderboard = False
 death_screen_close = False
+
+enter_score = config.ENTER_SCORE_BOX
+ldboard_manager = leaderboard_secrets.manager
+leaderboard: LeaderboardGUI = None
 
 
 clock = pygame.time.Clock()
@@ -73,6 +79,13 @@ while running:
         if event.type == QUIT:
             running = False
         elif event.type == KEYDOWN:
+            if global_vars.paused:
+                if not global_vars.show_leaderboard:
+                    global_vars.show_leaderboard = enter_score.handle_key(event)
+                    if global_vars.show_leaderboard:
+                        leaderboard = LeaderboardGUI(
+                            ldboard_manager.newscore(enter_score.text, tank.score, global_vars.time_lasted, include_scores=True)[1]
+                        )
             if event.key == K_w:
                 move_dir = 1
             elif event.key == K_s:
@@ -84,8 +97,8 @@ while running:
             elif event.key == K_F3:
             # elif (event.key == K_f) and (event.mod & KMOD_ALT) and (event.mod & KMOD_SHIFT):
                 global_vars.debug = not global_vars.debug
-            elif event.key == K_SPACE:
-                if death_screen_open:
+            elif event.key in (K_SPACE, K_ESCAPE):
+                if death_screen_open and (event.key == K_ESCAPE or global_vars.show_leaderboard):
                     death_screen_close = True
         elif event.type == KEYUP:
             if event.key in (K_w, K_s):
@@ -95,7 +108,8 @@ while running:
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
                 if death_screen_open:
-                    death_screen_close = True
+                    if global_vars.show_leaderboard:
+                        death_screen_close = True
                 else:
                     shot_active = True
 
@@ -144,6 +158,8 @@ while running:
         if tank.dead():
             death_screen_open = True
             global_vars.paused = True
+            global_vars.show_leaderboard = False
+            enter_score.clear()
         else:
             global_vars.time_lasted += delta_time
 
@@ -164,30 +180,41 @@ while running:
         time_rect.y = score_rect.bottom + 15
         screen.blit(time_disp, time_rect)
 
-    else:
+    elif not global_vars.show_leaderboard:
         rendered = config.FINAL_INFO_HEADER_FONT.render('You Died!', True, 'darkgreen')
         dest_rect = rendered.get_rect()
         dest_rect.x = 960 - dest_rect.centerx
-        dest_rect.y = 337 - dest_rect.centery
+        dest_rect.y = 200 - dest_rect.centery
         screen.blit(rendered, dest_rect)
 
         rendered = config.FINAL_INFO_BODY_FONT.render(f'You had a final score of {tank.score}', True, 'darkgreen')
         dest_rect = rendered.get_rect()
         dest_rect.x = 960 - dest_rect.centerx
-        dest_rect.y = 472 - dest_rect.centery
+        dest_rect.y = 350 - dest_rect.centery
         screen.blit(rendered, dest_rect)
 
         rendered = config.FINAL_INFO_BODY_FONT.render(f'And you survived for {global_vars.time_lasted:.3f} seconds', True, 'darkgreen')
         dest_rect = rendered.get_rect()
         dest_rect.x = 960 - dest_rect.centerx
-        dest_rect.y = 607 - dest_rect.centery
+        dest_rect.y = 500 - dest_rect.centery
         screen.blit(rendered, dest_rect)
 
-        rendered = config.FINAL_INFO_BODY_FONT.render('Press space or click the screen to continue.', True, 'darkgreen')
+        rendered = config.FINAL_INFO_BODY_FONT.render('Press escape to play again.', True, 'darkgreen')
         dest_rect = rendered.get_rect()
         dest_rect.x = 960 - dest_rect.centerx
-        dest_rect.y = 751 - dest_rect.centery
+        dest_rect.y = 650 - dest_rect.centery
         screen.blit(rendered, dest_rect)
+
+        rendered = config.FINAL_INFO_BODY_FONT.render('Enter your name below and press enter to submit a score:', True, 'darkgreen')
+        dest_rect = rendered.get_rect()
+        dest_rect.x = 960 - dest_rect.centerx
+        dest_rect.y = 800 - dest_rect.centery
+        screen.blit(rendered, dest_rect)
+
+        enter_score.render(screen, True)
+
+    else:
+        leaderboard.render(screen)
 
     if death_screen_open and death_screen_close:
         death_screen_open = False

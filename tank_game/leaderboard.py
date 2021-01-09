@@ -1,6 +1,7 @@
 from __future__ import annotations
 import datetime
 import json
+from typing import Union
 
 import dateparser
 import requests
@@ -10,7 +11,6 @@ END_NEWSCORE_SCORE = 'http://dreamlo.com/lb/%s/add/%s/%i'
 END_NEWSCORE_SCORE_TIME = 'http://dreamlo.com/lb/%s/add/%s/%i/%i'
 END_NEWSCORE_SCORE_TIME_MESSAGE = 'http://dreamlo.com/lb/%s/add/%s/%i/%i/%s'
 END_DELSCORE = 'http://dreamlo.com/lb/%s/delete/%s'
-END_CLEARALL = 'http://dreamlo.com/lb/%s/clear'
 END_GETSCORES_JSON = 'http://dreamlo.com/lb/%s/json'
 
 
@@ -35,6 +35,15 @@ class Score:
         date = dateparser.parse(data['date'])
         return Score(data['name'], score, seconds, data['text'], date)
 
+    @staticmethod
+    def parse_score_dict(data) -> ScoreList:
+        entries = data['dreamlo']['leaderboard']['entry']
+        return [Score._parsedict(entry) for entry in entries]
+
+
+ScoreList = list[Score]
+ResponseWithScores = tuple[requests.Response, ScoreList]
+
 
 class LeaderboardManager:
     private_code: str
@@ -44,11 +53,7 @@ class LeaderboardManager:
         self.private_code = private
         self.public_code = public
 
-    def _parse_scores(self, data):
-        entries = data['dreamlo']['leaderboard']['entry']
-        return [Score._parsedict(entry) for entry in entries]
-
-    def newscore(self, name: str, score: int, time: int = None, text: str = None) -> requests.Response:
+    def newscore(self, name: str, score: int, time: int = None, text: str = None, *, include_scores=False) -> Union[None, requests.Response, ResponseWithScores]:
         if text is not None and time is None:
             raise ValueError('time required')
         if time is None:
@@ -57,16 +62,40 @@ class LeaderboardManager:
             endpoint = END_NEWSCORE_SCORE_TIME % (self.private_code, name,  score, time)
         else:
             endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, name,  score, time, text)
-        while True:
-            res = requests.get(endpoint)
-            if res.status_code == 200:
-                break
-        return res
-    
-    def getscores(self) -> tuple[requests.Response, list[Score]]:
+        if include_scores:
+            endpoint = endpoint.replace('add', 'add-json')
+        try:
+            while True:
+                res = requests.get(endpoint)
+                if res.status_code == 200:
+                    break
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return None, None
+        try:
+            if include_scores:
+                return res, Score.parse_score_dict(res.json())
+            return res
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return res, None
+
+    def getscores(self) -> Union[None, ResponseWithScores]:
         endpoint = END_GETSCORES_JSON % self.public_code
-        while True:
-            res = requests.get(endpoint)
-            if res.status_code == 200:
-                break
-        return res, self._parse_scores(res.json())
+        try:
+            while True:
+                res = requests.get(endpoint)
+                if res.status_code == 200:
+                    break
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return None, None
+        try:
+            return res, Score.parse_score_dict(res.json())
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return res, None

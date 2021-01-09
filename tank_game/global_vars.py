@@ -12,3 +12,4 @@ all_tanks: list[Tank]
 camera: Vector2
 time_lasted: float
 paused: bool
+show_leaderboard: bool
