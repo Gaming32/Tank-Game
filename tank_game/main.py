@@ -95,7 +95,6 @@ while running:
             elif event.key == K_d:
                 rotate_dir = 1
             elif event.key == K_F3:
-            # elif (event.key == K_f) and (event.mod & KMOD_ALT) and (event.mod & KMOD_SHIFT):
                 global_vars.debug = not global_vars.debug
             elif event.key in (K_SPACE, K_ESCAPE):
                 if death_screen_open and (event.key == K_ESCAPE or global_vars.show_leaderboard):

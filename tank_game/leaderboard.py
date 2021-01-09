@@ -63,7 +63,7 @@ class LeaderboardManager:
         else:
             endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, name,  score, time, text)
         if include_scores:
-            endpoint = endpoint.replace('add', 'add-json')
+            endpoint = endpoint.replace('add', 'add-json', 1)
         try:
             while True:
                 res = requests.get(endpoint)
