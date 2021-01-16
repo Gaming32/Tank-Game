@@ -17,12 +17,15 @@ class PromisingThread(Thread):
 
     canceled: bool
 
-    # This code was copied from threading.py:877
-    def run(self) -> None:
+    def start(self) -> None:
         self.done = False
         self.return_value = None
         self.exception = None
         self.canceled = False
+        return super().start()
+
+    # This code was copied from threading.py:877
+    def run(self) -> None:
         ret = None
         try:
             if self._target:

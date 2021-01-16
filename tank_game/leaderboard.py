@@ -3,6 +3,7 @@ import datetime
 import urllib.parse
 from tank_game.promise import PromisingThread
 from typing import Union
+import logging
 
 import dateparser
 import requests
@@ -49,32 +50,38 @@ ResponseWithScores = tuple[requests.Response, ScoreList]
 class LeaderboardManager:
     private_code: str
     public_code: str
+    next_thread_id: int
 
     def __init__(self, private, public) -> None:
         self.private_code = private
         self.public_code = public
+        self.next_thread_id = 1
 
     def _newscore_inner(self, promise: PromisingThread, original_name: str, endpoint: str, include_scores: bool):
+        trys = 0
         try:
             while True:
                 if promise.canceled:
-                    print('Score upload/download canceled')
-                    return None, None
+                    logging.info('Score upload/download canceled after %s attampts' % trys)
+                    return None, 'Canceled score upload/download'
+                trys += 1
+                logging.info('Score upload/download attempt #%s...' % trys)
                 res = requests.get(endpoint)
                 if res.status_code == 200:
                     break
-        except Exception:
-            import traceback
-            traceback.print_exc()
+            logging.info('Score upload/download recieved HTTP 200 from server after %s attempts' % trys)
+        except Exception as e:
+            logging.error('Score upload/download failed due to network error after %s attempts' % trys, exc_info=e)
             return None, None
         if include_scores:
             try:
-                return res, Score.parse_score_dict(res.json())
-            except Exception:
-                import traceback
-                traceback.print_exc()
-                print('Message:', res.text)
+                parsed = Score.parse_score_dict(res.json())
+            except Exception as e:
+                logging.error('Score upload/download failed due to JSON error: %r' % res.text, exc_info=e)
                 return res, res.text
+            logging.info('Score upload/download succeeded')
+            return res, parsed
+        logging.info('Score upload (only) succeeded')
         return res, None
 
     def newscore(self, name: str, score: int, time: int = None, text: str = None, *, include_scores=False) -> Union[None, requests.Response, ResponseWithScores]:
@@ -90,7 +97,13 @@ class LeaderboardManager:
             endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, quote_name,  score, time, text)
         if include_scores:
             endpoint = endpoint.replace('add', 'add-json', 1)
-        prom = PromisingThread(target=self._newscore_inner, args=(name, endpoint, include_scores), daemon=True)
+        prom = PromisingThread(
+            target=self._newscore_inner,
+            args=(name, endpoint, include_scores),
+            daemon=True,
+            name=f'Score-Manager-{self.next_thread_id}'
+        )
+        self.next_thread_id += 1
         prom.start()
         return prom
 

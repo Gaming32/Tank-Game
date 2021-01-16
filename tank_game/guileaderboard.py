@@ -15,9 +15,11 @@ def trim_ellipses(s: str, l: int):
 
 class LeaderboardGUI:
     promise: PromisingThread
+    should_close: bool
 
     def __init__(self, promise: PromisingThread) -> None:
         self.promise = promise
+        self.should_close = False
 
     def render(self, surf: Surface):
         box = surf.get_rect()
@@ -28,6 +30,7 @@ class LeaderboardGUI:
         if not self.promise.done:
             if K_ESCAPE in global_vars.pressed_keys:
                 self.promise.cancel()
+                self.should_close = not global_vars.debug
             render = config.SCORE_FONT.render('Loading scores...', True, (255, 255, 255))
             load_frame = get_load_frame()
             newimg = Surface((render.get_width() + 100 + load_frame.get_width(), max(render.get_height(), load_frame.get_height()))).convert_alpha()

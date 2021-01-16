@@ -1,4 +1,5 @@
 import random
+import logging
 
 import pygame
 from pygame import *
@@ -7,6 +8,11 @@ from pygame.locals import *
 pygame.init()
 # FULLSCREEN = 0
 screen = pygame.display.set_mode((1920, 1080), FULLSCREEN | SCALED)
+logging.basicConfig(
+    format='[%(asctime)s] [%(threadName)s/%(levelname)s] [%(filename)s:%(lineno)i]: %(msg)s',
+    datefmt='%H:%M:%S',
+    level=logging.INFO
+)
 
 from tank_game import config, global_vars, leaderboard_secrets
 from tank_game.utils import StartCoroutine
@@ -25,10 +31,18 @@ def reset_tank():
 
 
 def create_enemies():
-    for _ in range(random.randrange(5) + 1):
+    for _ in range(random.randint(2, 4)):
         enemy = AITank(config.ENEMY_START_HEALTH)
         StartCoroutine(enemy.begin(screen))
         enemies.append(enemy)
+
+
+def is_leaderboard_showing():
+    if not (global_vars.show_leaderboard and leaderboard is not None):
+        return 0
+    elif leaderboard.promise.done or leaderboard.should_close:
+        return 2
+    return 1
 
 
 asynchronous = []
@@ -101,7 +115,8 @@ while running:
             elif event.key == K_F3:
                 global_vars.debug = not global_vars.debug
             elif event.key in (K_SPACE, K_ESCAPE):
-                if death_screen_open and (event.key == K_ESCAPE or global_vars.show_leaderboard):
+                ldb_showing = is_leaderboard_showing()
+                if death_screen_open and ((event.key == K_ESCAPE and ldb_showing != 1) or ldb_showing == 2):
                     death_screen_close = True
         elif event.type == KEYUP:
             global_vars.pressed_keys.discard(event.key)
@@ -112,7 +127,7 @@ while running:
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
                 if death_screen_open:
-                    if global_vars.show_leaderboard:
+                    if is_leaderboard_showing() == 2:
                         death_screen_close = True
                 else:
                     shot_active = True
@@ -220,10 +235,12 @@ while running:
     else:
         leaderboard.render(screen)
 
+    death_screen_close = death_screen_close or (global_vars.show_leaderboard and leaderboard.should_close)
     if death_screen_open and death_screen_close:
         death_screen_open = False
         death_screen_close = False
         global_vars.paused = False
+        global_vars.show_leaderboard = False
         rmco = []
         for co in asynchronous:
             if not hasattr(co, 'long_lasting'):
