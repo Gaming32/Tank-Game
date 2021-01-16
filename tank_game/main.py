@@ -34,6 +34,7 @@ def create_enemies():
 asynchronous = []
 global_vars.asynchronous = asynchronous
 global_vars.total_time = 0
+global_vars.pressed_keys = set()
 pygame.mouse.set_system_cursor(SYSTEM_CURSOR_CROSSHAIR)
 
 
@@ -81,6 +82,7 @@ while running:
         if event.type == QUIT:
             running = False
         elif event.type == KEYDOWN:
+            global_vars.pressed_keys.add(event.key)
             if global_vars.paused:
                 if not global_vars.show_leaderboard:
                     global_vars.show_leaderboard = enter_score.handle_key(event)
@@ -102,6 +104,7 @@ while running:
                 if death_screen_open and (event.key == K_ESCAPE or global_vars.show_leaderboard):
                     death_screen_close = True
         elif event.type == KEYUP:
+            global_vars.pressed_keys.discard(event.key)
             if event.key in (K_w, K_s):
                 move_dir = 0
             elif event.key in (K_a, K_d):

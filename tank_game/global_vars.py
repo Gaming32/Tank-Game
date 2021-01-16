@@ -14,3 +14,4 @@ time_lasted: float
 paused: bool
 show_leaderboard: bool
 total_time: float
+pressed_keys: set[int]

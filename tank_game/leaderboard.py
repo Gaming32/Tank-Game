@@ -1,6 +1,6 @@
 from __future__ import annotations
 import datetime
-import json
+import urllib.parse
 from tank_game.promise import PromisingThread
 from typing import Union
 
@@ -54,7 +54,7 @@ class LeaderboardManager:
         self.private_code = private
         self.public_code = public
 
-    def _newscore_inner(self, promise: PromisingThread, endpoint: str, include_scores: bool):
+    def _newscore_inner(self, promise: PromisingThread, original_name: str, endpoint: str, include_scores: bool):
         try:
             while True:
                 if promise.canceled:
@@ -67,31 +67,32 @@ class LeaderboardManager:
             import traceback
             traceback.print_exc()
             return None, None
-        try:
-            if include_scores:
+        if include_scores:
+            try:
                 return res, Score.parse_score_dict(res.json())
-            return res, None
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            return res, None
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                print('Message:', res.text)
+                return res, res.text
+        return res, None
 
     def newscore(self, name: str, score: int, time: int = None, text: str = None, *, include_scores=False) -> Union[None, requests.Response, ResponseWithScores]:
         if text is not None and time is None:
             raise ValueError('time required')
+
+        quote_name = urllib.parse.quote(name)
         if time is None:
-            endpoint = END_NEWSCORE_SCORE % (self.private_code, name,  score)
+            endpoint = END_NEWSCORE_SCORE % (self.private_code, quote_name,  score)
         elif text is None:
-            endpoint = END_NEWSCORE_SCORE_TIME % (self.private_code, name,  score, time)
+            endpoint = END_NEWSCORE_SCORE_TIME % (self.private_code, quote_name,  score, time)
         else:
-            endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, name,  score, time, text)
+            endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, quote_name,  score, time, text)
         if include_scores:
             endpoint = endpoint.replace('add', 'add-json', 1)
-        prom = PromisingThread(target=self._newscore_inner, args=(endpoint, include_scores), daemon=True)
+        prom = PromisingThread(target=self._newscore_inner, args=(name, endpoint, include_scores), daemon=True)
         prom.start()
         return prom
-        # return PromisingThread(target=)
-        return self._newscore_inner(endpoint, include_scores)
 
     def getscores(self) -> Union[None, ResponseWithScores]:
         endpoint = END_GETSCORES_JSON % self.public_code

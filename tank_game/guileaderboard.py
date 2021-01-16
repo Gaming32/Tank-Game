@@ -3,7 +3,7 @@ import pygame
 from pygame import *
 from pygame.font import Font
 
-from tank_game import config
+from tank_game import config, global_vars
 from tank_game.utils import get_load_frame
 
 
@@ -26,6 +26,8 @@ class LeaderboardGUI:
         box.width -= 200
         pygame.draw.rect(surf, (51, 50, 50), box, 0, 50)
         if not self.promise.done:
+            if K_ESCAPE in global_vars.pressed_keys:
+                self.promise.cancel()
             render = config.SCORE_FONT.render('Loading scores...', True, (255, 255, 255))
             load_frame = get_load_frame()
             newimg = Surface((render.get_width() + 100 + load_frame.get_width(), max(render.get_height(), load_frame.get_height()))).convert_alpha()
@@ -43,8 +45,9 @@ class LeaderboardGUI:
             surf.blit(newimg, drect)
             return
         scores = self.promise.return_value[1]
-        if scores is None:
-            render = config.SCORE_FONT.render('Unable to load scores!', True, (255, 255, 255))
+        if scores is None or isinstance(scores, str):
+            message = scores if scores is not None and len(scores) < 100 else 'Unable to load scores!'
+            render = config.SCORE_FONT.render(message, True, (255, 255, 255))
             drect = render.get_rect()
             drect.x = 960 - drect.centerx
             drect.y = 590 - drect.centery
