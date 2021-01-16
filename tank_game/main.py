@@ -33,6 +33,7 @@ def create_enemies():
 
 asynchronous = []
 global_vars.asynchronous = asynchronous
+global_vars.total_time = 0
 pygame.mouse.set_system_cursor(SYSTEM_CURSOR_CROSSHAIR)
 
 
@@ -74,6 +75,7 @@ while running:
         thisfps = 1000
     smoothfps = (smoothfps * fps_smoothing) + (thisfps * (1 - fps_smoothing))
     global_vars.delta_time = delta_time
+    global_vars.total_time += delta_time
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -84,7 +86,7 @@ while running:
                     global_vars.show_leaderboard = enter_score.handle_key(event)
                     if global_vars.show_leaderboard:
                         leaderboard = LeaderboardGUI(
-                            ldboard_manager.newscore(enter_score.text, tank.score, global_vars.time_lasted, include_scores=True)[1]
+                            ldboard_manager.newscore(enter_score.text, tank.score, global_vars.time_lasted, include_scores=True)
                         )
             if event.key == K_w:
                 move_dir = 1

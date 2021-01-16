@@ -26,3 +26,11 @@ for imgid in tank:
 turret = image.load('assets/turret.bmp').convert_alpha()
 enemy_turret = transform.scale(replace_image_colors(turret.copy(), _enemy_color_map), (128, 128))
 turret = transform.scale(turret, (128, 128))
+
+
+loading_images = [
+    image.load('assets/loading0.bmp').convert_alpha(),
+    image.load('assets/loading1.bmp').convert_alpha()
+]
+for (i, img) in enumerate(loading_images):
+    loading_images[i] = transform.scale(img, (100, 100))

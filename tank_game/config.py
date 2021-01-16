@@ -27,3 +27,5 @@ ENTER_SCORE_BOX = Textbox(
     Color(0, 0, 0),
     2, 15, ''
 )
+
+LOADING_TIME_BETWEEN_FRAMES = 0.5

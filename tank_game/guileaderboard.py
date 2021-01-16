@@ -1,9 +1,10 @@
+from tank_game.promise import PromisingThread
 import pygame
 from pygame import *
 from pygame.font import Font
 
 from tank_game import config
-from tank_game.leaderboard import Score, ScoreList
+from tank_game.utils import get_load_frame
 
 
 def trim_ellipses(s: str, l: int):
@@ -13,10 +14,10 @@ def trim_ellipses(s: str, l: int):
 
 
 class LeaderboardGUI:
-    scores: list[Score]
+    promise: PromisingThread
 
-    def __init__(self, scores: ScoreList) -> None:
-        self.scores = scores
+    def __init__(self, promise: PromisingThread) -> None:
+        self.promise = promise
 
     def render(self, surf: Surface):
         box = surf.get_rect()
@@ -24,7 +25,25 @@ class LeaderboardGUI:
         box.y += 100
         box.width -= 200
         pygame.draw.rect(surf, (51, 50, 50), box, 0, 50)
-        if self.scores is None:
+        if not self.promise.done:
+            render = config.SCORE_FONT.render('Loading scores...', True, (255, 255, 255))
+            load_frame = get_load_frame()
+            newimg = Surface((render.get_width() + 100 + load_frame.get_width(), max(render.get_height(), load_frame.get_height()))).convert_alpha()
+            newimg.fill((0, 0, 0, 0))
+            rrect = render.get_rect()
+            lrect = load_frame.get_rect()
+            lrect.y += newimg.get_height() // 2 - lrect.height // 2
+            newimg.blit(load_frame, lrect)
+            rrect.x += lrect.width + 100
+            rrect.y += newimg.get_height() // 2 - rrect.height // 2
+            newimg.blit(render, rrect)
+            drect = newimg.get_rect()
+            drect.x = 960 - drect.centerx
+            drect.y = 590 - drect.centery
+            surf.blit(newimg, drect)
+            return
+        scores = self.promise.return_value[1]
+        if scores is None:
             render = config.SCORE_FONT.render('Unable to load scores!', True, (255, 255, 255))
             drect = render.get_rect()
             drect.x = 960 - drect.centerx
@@ -32,7 +51,7 @@ class LeaderboardGUI:
             surf.blit(render, drect)
         else:
             y = 150
-            for score in self.scores:
+            for score in scores:
                 render = config.SCORE_FONT.render(trim_ellipses(score.name, 46), True, (255, 255, 255))
                 drect = render.get_rect()
                 drect.x = 125

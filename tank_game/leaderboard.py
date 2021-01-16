@@ -1,6 +1,7 @@
 from __future__ import annotations
 import datetime
 import json
+from tank_game.promise import PromisingThread
 from typing import Union
 
 import dateparser
@@ -53,6 +54,28 @@ class LeaderboardManager:
         self.private_code = private
         self.public_code = public
 
+    def _newscore_inner(self, promise: PromisingThread, endpoint: str, include_scores: bool):
+        try:
+            while True:
+                if promise.canceled:
+                    print('Score upload/download canceled')
+                    return None, None
+                res = requests.get(endpoint)
+                if res.status_code == 200:
+                    break
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return None, None
+        try:
+            if include_scores:
+                return res, Score.parse_score_dict(res.json())
+            return res, None
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return res, None
+
     def newscore(self, name: str, score: int, time: int = None, text: str = None, *, include_scores=False) -> Union[None, requests.Response, ResponseWithScores]:
         if text is not None and time is None:
             raise ValueError('time required')
@@ -64,23 +87,11 @@ class LeaderboardManager:
             endpoint = END_NEWSCORE_SCORE_TIME_MESSAGE % (self.private_code, name,  score, time, text)
         if include_scores:
             endpoint = endpoint.replace('add', 'add-json', 1)
-        try:
-            while True:
-                res = requests.get(endpoint)
-                if res.status_code == 200:
-                    break
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            return None, None
-        try:
-            if include_scores:
-                return res, Score.parse_score_dict(res.json())
-            return res
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            return res, None
+        prom = PromisingThread(target=self._newscore_inner, args=(endpoint, include_scores), daemon=True)
+        prom.start()
+        return prom
+        # return PromisingThread(target=)
+        return self._newscore_inner(endpoint, include_scores)
 
     def getscores(self) -> Union[None, ResponseWithScores]:
         endpoint = END_GETSCORES_JSON % self.public_code

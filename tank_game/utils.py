@@ -2,7 +2,7 @@ import pygame
 from pygame import *
 from pygame.locals import *
 
-from tank_game import global_vars
+from tank_game import global_vars, assets, config
 
 
 def rot_center(image: Surface, angle: int, x: int, y: int) -> tuple[Surface, Rect]:
@@ -60,3 +60,7 @@ def WaitForSeconds(seconds: float):
     while passed < seconds:
         passed += global_vars.delta_time
         yield
+
+
+def get_load_frame() -> Surface:
+    return assets.loading_images[int(global_vars.total_time // config.LOADING_TIME_BETWEEN_FRAMES) % len(assets.loading_images)]

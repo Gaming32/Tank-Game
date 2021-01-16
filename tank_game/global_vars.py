@@ -13,3 +13,4 @@ camera: Vector2
 time_lasted: float
 paused: bool
 show_leaderboard: bool
+total_time: float
