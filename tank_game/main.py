@@ -135,6 +135,12 @@ while running:
                 rotate_dir = 1
             elif event.key == K_F3:
                 global_vars.debug = not global_vars.debug
+                if global_vars.debug:
+                    logging.getLogger().setLevel(logging.DEBUG)
+                    logging.debug('Debug mode enabled')
+                else:
+                    logging.debug('Debug mode disabled')
+                    logging.getLogger().setLevel(logging.INFO)
             elif event.key in (K_SPACE, K_ESCAPE):
                 ldb_showing = is_leaderboard_showing()
                 if death_screen_open and ((event.key == K_ESCAPE and ldb_showing != 1) or ldb_showing == 2):
