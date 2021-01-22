@@ -195,7 +195,7 @@ class Tank:
 
     def get_collision(self, dist: int, within: int, angle: int, tanks: list[Tank]) -> tuple[bool, float, Tank]:
         if dist == 0:
-            return False
+            return False, 0, None
         if dist > 0:
             rel_angle = 0
         else:
