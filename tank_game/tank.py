@@ -221,7 +221,7 @@ class Tank:
 
     def get_shot(self, tanks: list[Tank]) -> tuple[bool, float, Tank]:
         # 1,073,741,824 is 32,768*32,768 (this means we can shoot things up to 32,768 pixels away)
-        did, dist, other = self.get_collision(96, 1073741824, self.turret_rotation, tanks)
+        did, dist, other = self.get_collision(96, 1_073_741_824, self.turret_rotation, tanks)
         would_hit = False
         hitdist = None
         if did:
