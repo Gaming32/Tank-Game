@@ -24,7 +24,7 @@ class PromisingThread(Thread):
         self.canceled = False
         return super().start()
 
-    # This code was copied from threading.py:877
+    # This code was copied from threading.py:877 (and modified slightly)
     def run(self) -> None:
         ret = None
         try:
