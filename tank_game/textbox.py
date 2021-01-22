@@ -21,7 +21,7 @@ class Textbox:
         self.edge_width = edge_width
         self.border_radius = border_radius
         self.text = start_text
-    
+
     def clear(self):
         self.text = ''
 
@@ -34,7 +34,7 @@ class Textbox:
         newrect.x += self.rect.width // 2 - rrect.centerx
         newrect.y += self.rect.height // 2 - rrect.centery
         return surf.blit(render, newrect)
-    
+
     def handle_key(self, event: pygame.event.Event) -> bool:
         if event.type != KEYDOWN:
             return

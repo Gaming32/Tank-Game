@@ -141,7 +141,7 @@ class Tank:
         self.frame[1] = int(self.tot_dist[1] / 8 % 2)
         if update_img and self.frame != old_frame:
             self.update_image()
-        
+
     def gethbox(self) -> tuple[Vector2, Vector2, Vector2, Vector2]:
         ori_offset = self.half_size.rotate(self.rotation)
         origin_corner = self.position - ori_offset + self.half_size # Top left corner
@@ -262,6 +262,6 @@ class Tank:
             last_angle = angle
             angle = curpos.angle_to(dest)
             yield
-    
+
     def dead(self) -> bool:
         return self.health <= 0

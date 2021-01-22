@@ -6,7 +6,7 @@ from tank_game import global_vars, assets, config
 
 
 def rot_center(image: Surface, angle: int, x: int, y: int) -> tuple[Surface, Rect]:
-    
+
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center = image.get_rect(center = (x, y)).center)
 

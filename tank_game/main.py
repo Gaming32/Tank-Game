@@ -1,5 +1,6 @@
 import random
 import logging
+import sys
 
 import pygame
 from pygame import *
@@ -9,16 +10,34 @@ pygame.init()
 # FULLSCREEN = 0
 screen = pygame.display.set_mode((1920, 1080), FULLSCREEN | SCALED)
 logging.basicConfig(
-    format='[%(asctime)s] [%(threadName)s/%(levelname)s] [%(filename)s:%(lineno)i]: %(msg)s',
+    format='[%(asctime)s] [%(threadName)s/%(levelname)s] [%(filename)s:%(lineno)i]: %(message)s',
     datefmt='%H:%M:%S',
     level=logging.INFO
 )
 
-from tank_game import config, global_vars, leaderboard_secrets
-from tank_game.utils import StartCoroutine
-from tank_game.tank import Tank
-from tank_game.aitank import AITank
-from tank_game.guileaderboard import LeaderboardGUI
+logging.info('Loading assets...')
+try:
+    from tank_game import config, global_vars, leaderboard_secrets
+    from tank_game.utils import StartCoroutine
+    from tank_game.tank import Tank
+    from tank_game.aitank import AITank
+    from tank_game.guileaderboard import LeaderboardGUI
+except:
+    logging.fatal('Error loading required assets, quitting!', exc_info=True)
+    sys.exit(1)
+logging.info('Assets loaded!')
+
+logging.info('Initializing pygame.mixer...')
+try:
+    pygame.mixer.init()
+except Exception:
+    logging.warning("Error initializing mixer, you won't be able to hear any sound during your experience", exc_info=True)
+    global_vars.use_sound = False
+else:
+    logging.info('Mixer initialized!')
+    global_vars.use_sound = True
+
+from tank_game import music
 
 
 def reset_tank():
@@ -80,6 +99,8 @@ smoothfps = 1000
 fps_smoothing = 0.9
 global_vars.debug = False
 global_vars.all_tanks = [tank] + enemies
+
+music.play_random_song()
 
 while running:
     ms_time = clock.tick(config.FRAMERATE_CAP)
@@ -179,6 +200,7 @@ while running:
             global_vars.paused = True
             global_vars.show_leaderboard = False
             enter_score.clear()
+            music.stop_music()
         else:
             global_vars.time_lasted += delta_time
 
@@ -251,5 +273,6 @@ while running:
         enemies.clear()
         create_enemies()
         global_vars.all_tanks[1:] = enemies
+        music.play_random_song()
 
     pygame.display.update()

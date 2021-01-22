@@ -29,7 +29,7 @@ class Score:
         self.seconds = seconds
         self.text = text
         self.date = date
-    
+
     @classmethod
     def _parsedict(self, data) -> Score:
         score = int(data['score'])
@@ -62,22 +62,22 @@ class LeaderboardManager:
         try:
             while True:
                 if promise.canceled:
-                    logging.info('Score upload/download canceled after %s attampts' % trys)
+                    logging.info('Score upload/download canceled after %s attempt(s)' % trys)
                     return None, 'Canceled score upload/download'
                 trys += 1
                 logging.info('Score upload/download attempt #%s...' % trys)
                 res = requests.get(endpoint)
                 if res.status_code == 200:
                     break
-            logging.info('Score upload/download recieved HTTP 200 from server after %s attempts' % trys)
-        except Exception as e:
-            logging.error('Score upload/download failed due to network error after %s attempts' % trys, exc_info=e)
+            logging.info('Score upload/download recieved HTTP 200 from server after %s attempt(s)' % trys)
+        except Exception:
+            logging.error('Score upload/download failed due to network error after %s attempt(s)' % trys, exc_info=True)
             return None, None
         if include_scores:
             try:
                 parsed = Score.parse_score_dict(res.json())
-            except Exception as e:
-                logging.error('Score upload/download failed due to JSON error: %r' % res.text, exc_info=e)
+            except Exception:
+                logging.error('Score upload/download failed due to JSON error: %r' % res.text, exc_info=True)
                 return res, res.text
             logging.info('Score upload/download succeeded')
             return res, parsed
